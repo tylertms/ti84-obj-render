@@ -2,7 +2,9 @@
 1. Install the [CE Toolchain](https://ce-programming.github.io/toolchain/static/getting-started.html]).
 2. Clone this repo and build with `make`.
 3. Use [TI Connect CE](https://education.ti.com/en/products/computer-software/ti-connect-ce-sw) to copy `bin/RENDER.8xp` to your calculator.
-
+4. Install [clibs](https://github.com/CE-Programming/libraries/) to your calculator if needed.
+5. Run PRGM->RENDER on your TI84.
+   
 To include your own `OBJ` file, export your model with vertex colors and adjust `SCALE` in `main.c`.
 
 ## Limitations:
