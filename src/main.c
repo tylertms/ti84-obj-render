@@ -9,7 +9,8 @@
 
 #include "data.h"
 
-#define SCALE 200
+#define SCALE 300
+#define PALETTE_SIZE 256
 
 typedef struct {
   short x, y, z;
@@ -22,15 +23,13 @@ typedef struct {
 } face;
 
 uint8_t hash_rgb(uint8_t r, uint8_t g, uint8_t b);
-void populate_vertex(vertex *v, char *ptr);
+void populate_vertex(vertex *v, char *ptr, uint16_t palette[]);
 void populate_face(face *f, char *ptr);
 
 int main(void) {
   os_ClrHome();
-  gfx_Begin();
-  gfx_SetDrawBuffer();
 
-  // quickly pass through the obj so we can 
+  // quickly pass through the obj so we can
   // allocate enough vertices and faces
   int vertex_count = 0;
   int face_count = 0;
@@ -44,14 +43,21 @@ int main(void) {
   vertex vertices[vertex_count];
   face faces[face_count];
 
-  char *ptr = data;
+  char *ptr = (char *)data;
 
+  // set background color to dark gray
+  uint16_t custom_palette[PALETTE_SIZE];
+  custom_palette[0] = gfx_RGBTo1555(100, 100, 100);
+
+  os_PutStrFull("Parsing vertex data...");
   // populate vertices and faces with data from the .obj file
   for (int i = 0; i < vertex_count; i++) {
     while (*ptr++ != 'v');
-    populate_vertex(&vertices[i], ptr);
+    populate_vertex(&vertices[i], ptr, custom_palette);
   }
 
+  os_ClrHome();
+  os_PutStrFull("Parsing face data...");
   for (int i = 0; i < face_count; i++) {
     while (*ptr++ != 'f');
     populate_face(&faces[i], ptr);
@@ -61,8 +67,19 @@ int main(void) {
   short half_w = GFX_LCD_WIDTH / 2;
   short half_h = GFX_LCD_HEIGHT / 2;
 
+  os_ClrHome();
+  gfx_Begin();
+  gfx_SetDrawBuffer();
+
+  for (int i = 0; i < 255; i++) {
+    gfx_palette[i] = custom_palette[i];
+  }
+
   // rendering loop
   while (x < M_PI * 2 && !os_GetCSC()) {
+    gfx_FillScreen(0);
+
+    // loop through each face and draw it
     for (int i = 0; i < face_count; i++) {
       face f = faces[i];
       vertex a = vertices[f.a - 1];
@@ -79,7 +96,7 @@ int main(void) {
       short a_w = cosx * a.x + sinx * a.z;
       short b_w = cosx * b.x + sinx * b.z;
       short c_w = cosx * c.x + sinx * c.z;
-      
+
       gfx_FillTriangle(a_w + half_w, -a.y + half_h, b_w + half_w, -b.y + half_h,
                        c_w + half_w, -c.y + half_h);
     }
@@ -89,16 +106,8 @@ int main(void) {
     gfx_SwapDraw();
     gfx_SetDrawBuffer();
 
-
-    // clear background to dark color without affecting palette
-    // (definitely not an optimized way to do this)
-    uint16_t color = gfx_palette[0];
-    gfx_palette[0] = gfx_RGBTo1555(64, 64, 64);
-    gfx_FillScreen(0);
-    gfx_palette[0] = color;
-
     // rotate the model
-    x += 0.1;
+    x += 0.15;
   }
 
   gfx_End();
@@ -109,11 +118,12 @@ int main(void) {
 // collisions could occur, this is definitely not the best stategy
 uint8_t hash_rgb(uint8_t r, uint8_t g, uint8_t b) {
   uint16_t hash = (r * 31) + (g * 37) + (b * 41);
+  while (!hash++);
   return (uint8_t)(hash & 0xFF);
 }
 
 // parse through the obj data to read position and color info
-void populate_vertex(vertex *v, char *ptr) {
+void populate_vertex(vertex *v, char *ptr, uint16_t palette[]) {
   v->x = (short)(strtod(ptr, &ptr) * SCALE);
   v->y = (short)(strtod(ptr, &ptr) * SCALE);
   v->z = (short)(strtod(ptr, &ptr) * SCALE);
@@ -125,8 +135,7 @@ void populate_vertex(vertex *v, char *ptr) {
   uint8_t hash = hash_rgb(v->r, v->g, v->b);
   v->palette_index = hash;
 
-  gfx_palette[hash] =
-      gfx_RGBTo1555(v->r, v->g, v->b);
+  palette[hash] = gfx_RGBTo1555(v->r, v->g, v->b);
 }
 
 // parse through the obj data to assign face vertex indices
