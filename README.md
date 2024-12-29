@@ -11,6 +11,8 @@ To include your own `OBJ` file:
 2. Place it in ~/assets as the only file.
 3. Adjust `SCALE` in `main.c`, and re-run `make`.
 
+If your calculator is on firmware version 5.5 or later, check out [arTIfiCE](https://yvantt.github.io/arTIfiCE/) for running assembly programs.
+
 ## Limitations:
 * Your `OBJ` file must fit in ~50kB.
 * In practice, the rendering is fairly unoptimized here, as every triangle will be drawn once per frame (Benchmarked roughly 1 FPS at 180 triangles).
